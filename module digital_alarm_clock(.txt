@@ -1,0 +1,114 @@
+module digital_alarm_clock(
+clk_1sec,     //clock with 1Hz freq
+reset,		//active high reset
+set_time,	//inout 1 to select set time option
+set_hour,	//input hour
+set_minute,	//input minute
+set_ampm,
+alarm_hour,
+alarm_minute,
+alarm_ampm,	//input am or pm,0-->am & 1-->am
+stopwatch_on,
+stopwatch_reset,
+seconds,
+minutes,
+hours,
+am_pm,
+stopwatch_hours,
+stopwatch_minutes,
+stopwatch_seconds,
+alarm_ring);		//0-->am, 1-->pm
+
+//inputs
+input clk_1sec;
+input set time;
+input [3:0] set_hour;
+input [5:0] set_minute;
+input set_ampm;
+input [3:0] alarm_hour;
+input [5:0] alarm_minute;
+input alarm_ampm;
+input stopwatch_on;
+input stopwatch_reset;
+
+//outputs
+output [5:0] seconds;
+output [5:0] minutes;
+output [3:0] hours;
+output am_pm;
+output [3:0] stopwatch_hours;
+output [5:0] stopwatch_minutes;
+output [5:0] stopwatch_seconds;
+output alarm_ring;
+
+//Internal variables
+reg [5:0] seconds;
+reg [5:0] minutes;
+reg [3:0] hours;
+reg am_pm;
+reg [3:0] stopwatch_hours;
+reg [5:0] stopwatch+minutes;
+reg [5:0] stopwatch_seconds;
+reg alaram_ring=0;
+
+
+//Execute the always blocks when the clock or reset inputs are changing from 0 to 1
+always@(posedge(clk_1sec) or posedge(reset) or posedge(set_time))
+begin
+if(reset==1'b1) begin		//check for active high reset
+seconds=0;
+minutes=0;
+hours=12;
+am_pm=0;
+end
+else if(set_time) begin		//set time manually
+seconds=0;
+minutes=set_minutes;
+hours=set_hour;
+am_pm=set_ampm;
+end
+elseif(clk_1sec==1'b1) begin		//at the beginning of each second
+seconds=seconds+1			//increment sec
+if(seconds==60) begin			//check for max of sec
+seconds=0;				//reset seconds
+minutes=minutes+1;			//increment minutes
+if(minutes==60) begin			//check for max of minutes
+minutes=0;				//reset minutes
+hours=hours+1;				//increment hours
+if(hours==12) begin			//check for max of hours
+am_pm=!am_pm;				//toggle am_pm
+end
+else if(hours==13) begin
+hours=1;
+end
+end
+end
+alarm_ring=!(hours^alarm_hour)|(minutes^alarm_minute)|(am_pm^alarm_ampm));    //compare alarm time with present time
+end
+end
+
+always@ (posedge(clk_1sec) or posedge(stopwatch_reset))
+begin
+if(stopwatch_reset==1'b1) begin			//check for active high reset
+
+//reset time
+stopwatch_seconds=0;
+stopwatch_minutes=0;
+stopwatch_hours=0;
+end
+else if(stopwatch_on) begin			//at the beginning of each second
+stopwatch_seconds=stopwatch_seconds+1;		//increment second 
+if(stopwatch_seconds==60) begin			//check for max of seconds
+stopwatch_seconds=0;				//reset seconds
+stopwatch_minutes=stopwatch_minutes+1;		//increment minutes
+if(stopwatch_minutes==0) begin			//check max of minutes
+stopwatch_minutes=0;				//resets minutes
+stopwatch_hours=stopwatch_hours+1;		//increment hours
+if(stopwatch_hours==24) begin			//check for max of hours
+stopwatch_hours=0;				//resets hours
+end
+end
+end
+end
+end
+endmodule
